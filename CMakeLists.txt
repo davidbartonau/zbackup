@@ -15,11 +15,22 @@ if( NOT CMAKE_BUILD_TYPE )
   set( CMAKE_BUILD_TYPE Release )
 endif( NOT CMAKE_BUILD_TYPE )
 
+set(STATIC_LINKING FALSE CACHE BOOL "Build a static binary?")
+if ( STATIC_LINKING )
+  MESSAGE("ZBackup static binary")
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+else ( STATIC_LINKING )
+  MESSAGE("ZBackup dynamic binary")
+endif ( STATIC_LINKING )
+
 find_package( ZLIB REQUIRED )
 include_directories( ${ZLIB_INCLUDE_DIRS} )
 
 find_package( OpenSSL REQUIRED )
 include_directories( ${OPENSSL_INCLUDE_DIR} )
+if( STATIC_LINKING )
+  set ( OPENSSL_LIBRARIES "${OPENSSL_LIBRARIES}" -ldl )
+endif(STATIC_LINKING)
 
 find_package( Protobuf REQUIRED )
 include_directories( ${PROTOBUF_INCLUDE_DIRS} )
@@ -64,6 +75,11 @@ if ( ZBACKUP_VERSION )
   MESSAGE("ZBackup version ${ZBACKUP_VERSION}")
 endif( ZBACKUP_VERSION )
 
+if( STATIC_LINKING )
+  set( CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++" )
+  set ( LIBUNWIND_LIBRARIES )
+endif(STATIC_LINKING)
+
 set( sourceFiles
   appendallocator.cc
   backup_collector.cc
@@ -104,6 +120,7 @@ if ( WITH_BUSE )
     buse.c
   )
 endif()
+
 add_executable( zbackup ${sourceFiles} ${protoSrcs} ${protoHdrs} )
 if ( WITH_BUSE )
   target_compile_definitions( zbackup PRIVATE WITH_BUSE )
@@ -118,5 +135,9 @@ target_link_libraries( zbackup
   ${LIBLZO_LIBRARIES}
   ${LIBUNWIND_LIBRARIES}
 )
+
+#if( STATIC_LINKING )
+#  set_target_properties( zbackup PROPERTIES LINK_SEARCH_END_STATIC 1 )
+#endif(STATIC_LINKING)
 
 install( TARGETS zbackup DESTINATION bin )
