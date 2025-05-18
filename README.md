@@ -33,6 +33,7 @@ The program has the following features:
 To build and install:
 
 ```bash
+apt install cmake libssl-dev libprotobuf-dev liblzma-dev liblzo2-dev zlib1g-dev build-essential protobuf-compiler
 cd zbackup
 cmake .
 make
